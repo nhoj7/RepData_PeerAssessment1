@@ -1,25 +1,155 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Peer Assignment1 for Reproducible Research"
+output: html_document
 ---
 
+This is an R Markdown document that contains a short analysis on biometric data. 
+Dplyr library will be used to assist the analysis. It is loaded with the command:
+```{r, results="hide", message=FALSE}
+library(dplyr)
+```
 
-## Loading and preprocessing the data
+The following code chunck is used for downloading and unzipping the data file, provided that it doesn't exist in the working directory. 
+```{r, results = "hide"}
+if (!file.exists("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip") & !file.exists("activity.csv")){
+  fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+  file <- download.file(fileUrl, target <- "repdata-data-activity.zip", method = "curl")
+  print("Downloaded")
+}
 
+if (!file.exists("activity.csv")){
+  unzip("repdata-data-activity.zip") 
+  print("Unzipped")
+}
+```
 
+##Loading and preprocessing the data
+Data is loaded from the csv file that was previously downloaded.
+```{r}
+data <- read.csv("activity.csv")
+```
 
-## What is mean total number of steps taken per day?
+##Mean total number of steps taken per day
+The downloaded data is grouped per day and for every day the sum of steps taken is calculated. The NA values are ignored by setting the appropriate argument. Some of the recorded values per day are also shown.
+```{r}
+gd <- group_by(data,date)
+tsteps <- summarize(gd, sum(steps, na.rm = TRUE))
+names(tsteps) <- c("Date", "Total.Steps")
+head(tsteps)
+```
 
+The following histogram shows the frequency with which the value of steps taken per day appears in the previous data. The number of different breaks is set to 10 which means that 11 intervals of steps values are defined in the histogram.  
+```{r}
+hist(tsteps$Total.Steps, breaks = 10, xlab = "Number of steps", ylab = "Frequency", 
+     main = "Mean steps per day")
+```
 
+The mean value of steps taken per day is:
+```{r}
+mean(tsteps$Total.Steps)
+```
 
-## What is the average daily activity pattern?
+The median value of steps taken per day is:
+```{r}
+median(tsteps$Total.Steps)
+```
 
+##Average daily activity pattern
+Similarly the data can be grouped by the interval. Then for each interval the average number of steps is calculated. The result is plotted producing the following plot that depicts the activity pattern throughout the day.
+```{r}
+gdint <- group_by(data,interval)
+avsteps <- summarize(gdint, mean(steps, na.rm = TRUE)) 
+names(avsteps) <- c("Interval", "Av.Steps")
+with(avsteps, plot(Interval, Av.Steps, type = "l", xla = "Interval", ylab = "Steps", main = "Average steps through the day"))
+```
 
+The interval during the day when the maximum number of steps on average is observed is:
+```{r}
+unlist(avsteps[which.max(unlist(avsteps[,2])),1])
+```
 
-## Imputing missing values
+This means that the 5-minute interval starting after 835 minutes from the beginning of the day is the interval with the higher activity observed as far as the measured steps are concerned.
+The same conclusion can be also inferred from observing the previous figure.
 
+##Imputing missing values
+The number of empty records is:
+```{r}
+sum(is.na(data$steps))
+```
 
+Empty records are filled with the mean value of the corresponding interval and a new dataframe called fdata is produced. The new data frame contains no missing values.
+```{r}
+fdata <- data
+ind <- which(is.na(data$steps))
+fdata[ind,1] <- avsteps[which(avsteps[,1] == fdata[ind,3]),2]
+gfd <- group_by(fdata,date)
+ftsteps <- summarize(gfd, sum(steps))
+names(ftsteps) <- c("Date", "Total.Steps")
+```
 
-## Are there differences in activity patterns between weekdays and weekends?
+Similarly with the previous case, the histogram for the values of the new data frame is plotted.
+```{r}
+hist(ftsteps$Total.Steps, breaks = 10, xlab = "Number of steps", ylab = "Frequency", 
+     main = "Mean steps per day (filled data)")
+```
+
+The new mean value is:
+```{r}
+mean(ftsteps$Total.Steps)
+```
+
+And the median value is:
+```{r}
+median(ftsteps$Total.Steps)
+```
+
+As one can easily observe that the mean and median values for the new data set differ from the previous where the NA values were not filled. Specifically the values of the new dataset are higher.
+
+##Differences in activity patterns between weekdays and weekends
+Data is tranformed so that the second collumn is of type Date
+```{r}
+fdata <- transform(fdata, date = as.Date(as.character(date)))
+```
+
+A new function is introduced, called custom_fact(), that converts a date input to a factor variable depending on whether it is a weekday or weekend.  
+```{r}
+custom_fact <- function(x) {
+  week_end <- c("Saturday", "Sunday")
+  week_days <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+  if (weekdays(x) %in% week_days){
+    res <- as.factor("weekday")
+  }
+  else{
+   res <- as.factor("weekend") 
+  }
+  res
+}
+```
+
+A new collumn is added to the data containing the calculated factor variable that corresponds to each record. The previously defined function is used for this purpose.
+```{r}
+fdata <- mutate(fdata,datetype = sapply(fdata$date, custom_fact))
+```
+
+A subset of the data containg only the weekend records is formed. The data is grouped by the interval and then the mean value for each interval is calculated.
+```{r}
+wkend <- subset(fdata, datetype == "weekend")
+gdwkend <- group_by(wkend,interval)
+wkendsteps <- summarize(gdwkend, mean(steps))
+names(wkendsteps) <- c("interval", "mean.steps")
+```
+
+The same calculations are performed on the data subset that contains the weekdays records.
+```{r}
+wkday <- subset(fdata, datetype == "weekday")
+gdwkday <- group_by(wkday,interval)
+wkdaysteps <- summarize(gdwkday, mean(steps))
+names(wkdaysteps) <- c("interval", "mean.steps")
+```
+
+The results are plotted below:
+```{r}
+par(mfrow=c(2,1), mar = c(3.8,3.8,3.8,3.8))
+with(wkendsteps, plot(interval, mean.steps, type ="l", xlab="Interval",ylab="Steps",main="Weekend"))
+with(wkdaysteps, plot(interval, mean.steps, type ="l", xlab="Interval",ylab="Steps",main="Weekdays"))
+```
