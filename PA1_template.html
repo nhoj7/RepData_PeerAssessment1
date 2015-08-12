@@ -67,7 +67,7 @@ img {
 <p>This is an R Markdown document that contains a short analysis on biometric data. Dplyr library will be used to assist the analysis. It is loaded with the command:</p>
 <pre class="r"><code>library(dplyr)</code></pre>
 <p>The following code chunck is used for downloading and unzipping the data file, provided that it doesn’t exist in the working directory.</p>
-<pre class="r"><code>if (!file.exists(&quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip&quot;) &amp; !file.exists(&quot;activity.csv&quot;)){
+<pre class="r"><code>if (!file.exists(&quot;repdata-data-activity.zip&quot;) &amp; !file.exists(&quot;activity.csv&quot;)){
   fileUrl &lt;- &quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip&quot;
   file &lt;- download.file(fileUrl, target &lt;- &quot;repdata-data-activity.zip&quot;, method = &quot;curl&quot;)
   print(&quot;Downloaded&quot;)

@@ -11,7 +11,7 @@ library(dplyr)
 
 The following code chunck is used for downloading and unzipping the data file, provided that it doesn't exist in the working directory. 
 ```{r, results = "hide"}
-if (!file.exists("https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip") & !file.exists("activity.csv")){
+if (!file.exists("repdata-data-activity.zip") & !file.exists("activity.csv")){
   fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
   file <- download.file(fileUrl, target <- "repdata-data-activity.zip", method = "curl")
   print("Downloaded")
